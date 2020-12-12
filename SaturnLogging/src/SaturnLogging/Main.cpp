@@ -31,7 +31,7 @@ SOFTWARE.
 
 int main( int argc, char** argv )
 {
-	using namespace Saturn::Loggging;
+	using namespace LOGNAMESPACE;
 
 	Logger* loggerEx = new Logger();
 

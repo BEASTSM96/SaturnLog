@@ -57,12 +57,12 @@ SOFTWARE.
 #define BOLDCYAN    "\033[1m\033[36m"      /* Bold Cyan */
 #define BOLDWHITE   "\033[1m\033[37m"      /* Bold White */
 
-namespace Saturn::Loggging {
+namespace LOGNAMESPACE {
 	using u8 = unsigned char;
 
 	using Message = const char*;
 
-	enum Severity : unsigned char
+	enum Severity : u8
 	{
 		Trace,
 		Info,
@@ -85,25 +85,27 @@ namespace Saturn::Loggging {
 	class FileSink : LogSink
 	{
 	public:
-		virtual void Flush() override;
-		virtual void Print() override;
-		virtual void Add( Message msg ) override;
-	};
+		virtual void Flush() override 
+		{
+			Msgs.clear();
+			MsgAmt = 0;
+		}
 
-	class Logger
-	{
-	public:
-		Logger();
-		~Logger();
+		virtual void Print() override 
+		{
+			std::ofstream file( "Log.log", std::ios::binary );
 
-		void Critical( Message msg );
-		void Error( Message msg );
-		void Warn( Message msg );
-		void Info( Message msg );
-		void Trace( Message msg );
-		void AddMsg( Message msg );
-	public:
-		FileSink* fileSink;
+			for( int i = 0; i < Msgs.size(); i++ )
+			{
+				file << Msgs.at( i ) << '\n';
+			}
+		}
+
+		virtual void Add( Message msg ) override 
+		{
+			Msgs.push_back( msg );
+			MsgAmt++;
+		}
 	};
 
 	class Log
@@ -115,15 +117,135 @@ namespace Saturn::Loggging {
 			LogEx( msg, severity );
 		}
 
-		static void LogEx( const char& msg, Severity severity );
-		static void LogEx( Message msg, Severity severity );
-		static void LogEx( Message msg );
-		static void LogEx( char* msg, Severity severity );
+		static void LogEx( const char& msg, Severity severity )
+		{
 
-		static void EndLine();
+
+		}
+
+		static void LogEx( Message msg )
+		{
+			printf( msg );
+		}
+
+		static void LogEx( Message msg, Severity severity )
+		{
+			if( severity == Severity::Trace )
+			{
+				LogEx( msg );
+				EndLine();
+				return;
+			}
+
+			if( severity == Severity::Info )
+			{
+				LogEx( GREEN );
+				LogEx( msg );
+				LogEx( "\033[0m\t\t" );
+				EndLine();
+				return;
+			}
+
+			if( severity == Severity::Warn )
+			{
+				LogEx( YELLOW );
+				LogEx( msg );
+				LogEx( "\033[0m\t\t" );
+				EndLine();
+				return;
+			}
+
+			if( severity == Severity::Error )
+			{
+				LogEx( RED );
+				LogEx( msg );
+				LogEx( "\033[0m\t\t" );
+				EndLine();
+				return;
+			}
+
+			if( severity == Severity::Critical )
+			{
+				LogEx( RED );
+				LogEx( msg );
+				LogEx( "\033[0m\t\t" );
+				EndLine();
+				return;
+			}
+		}
+
+		static void EndLine()
+		{
+			printf( "\n" );
+		}
 	};
 
 
+	class Logger
+	{
+	public:
+		Logger() 
+		{
+			fileSink = new FileSink();
+		}
+
+		~Logger() 
+		{
+			fileSink->Flush();
+			delete fileSink;
+		}
+
+		void Critical( Message msg ) 
+		{
+			Error( msg );
+		}
+
+		void Error( Message msg )
+		{
+			Log::LogEx( RED );
+			Log::LogEx( msg );
+			Log::LogEx( RESET );
+			Log::EndLine();
+
+			AddMsg( msg );
+		}
+
+		void Warn( Message msg ) 
+		{
+			Log::LogEx( YELLOW );
+			Log::LogEx( msg );
+			Log::LogEx( RESET );
+			Log::EndLine();
+
+			AddMsg( msg );
+		}
+
+		void Info( Message msg ) 
+		{
+			Log::LogEx( GREEN );
+			Log::LogEx( msg );
+			Log::LogEx( RESET );
+			Log::EndLine();
+
+			AddMsg( msg );
+		}
+
+		void Trace( Message msg ) 
+		{
+			Log::LogEx( msg );
+			Log::EndLine();
+
+			AddMsg( msg );
+		}
+
+		void AddMsg( Message msg )
+		{
+			fileSink->Add( msg );
+			fileSink->Print();
+		}
+	public:
+		FileSink* fileSink;
+	};
 }
 
 #endif
