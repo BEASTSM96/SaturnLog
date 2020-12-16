@@ -30,6 +30,8 @@ SOFTWARE.
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <chrono>
+
 
 #pragma warning (disable : 26812) // The enum type type-name is unscoped. Prefer 'enum class' over 'enum' (Enum.3)
 
@@ -85,13 +87,13 @@ namespace LOGNAMESPACE {
 	class FileSink : LogSink
 	{
 	public:
-		virtual void Flush() override 
+		virtual void Flush() override
 		{
 			Msgs.clear();
 			MsgAmt = 0;
 		}
 
-		virtual void Print() override 
+		virtual void Print() override
 		{
 			std::ofstream file( "Log.log", std::ios::binary );
 
@@ -101,7 +103,7 @@ namespace LOGNAMESPACE {
 			}
 		}
 
-		virtual void Add( Message msg ) override 
+		virtual void Add( Message msg ) override
 		{
 			Msgs.push_back( msg );
 			MsgAmt++;
@@ -184,18 +186,18 @@ namespace LOGNAMESPACE {
 	class Logger
 	{
 	public:
-		Logger() 
+		Logger()
 		{
 			fileSink = new FileSink();
 		}
 
-		~Logger() 
+		~Logger()
 		{
 			fileSink->Flush();
 			delete fileSink;
 		}
 
-		void Critical( Message msg ) 
+		void Critical( Message msg )
 		{
 			Error( msg );
 		}
@@ -210,7 +212,7 @@ namespace LOGNAMESPACE {
 			AddMsg( msg );
 		}
 
-		void Warn( Message msg ) 
+		void Warn( Message msg )
 		{
 			Log::LogEx( YELLOW );
 			Log::LogEx( msg );
@@ -220,7 +222,7 @@ namespace LOGNAMESPACE {
 			AddMsg( msg );
 		}
 
-		void Info( Message msg ) 
+		void Info( Message msg )
 		{
 			Log::LogEx( GREEN );
 			Log::LogEx( msg );
@@ -230,7 +232,7 @@ namespace LOGNAMESPACE {
 			AddMsg( msg );
 		}
 
-		void Trace( Message msg ) 
+		void Trace( Message msg )
 		{
 			Log::LogEx( msg );
 			Log::EndLine();
@@ -246,6 +248,58 @@ namespace LOGNAMESPACE {
 	public:
 		FileSink* fileSink;
 	};
+
+	class MessageCallback
+	{
+	public:
+		virtual void OnMessageCallback( LOGNAMESPACE::Message msg ) { }
+
+		virtual void OnMessageDeleted( LOGNAMESPACE::Message msg ) { }
+
+		virtual void OnFlush() { }
+	protected:
+		Logger logger;
+		std::vector<Message> Messages;
+	};
+
+	class Timer
+	{
+		using Time = std::chrono::steady_clock;
+		using TimePoint = std::chrono::steady_clock::time_point;
+		using Duration = std::chrono::duration<double>;
+		using MilliSeconds = std::chrono::milliseconds;
+		std::chrono::time_point<Time> Start_timer;
+	public:
+		Timer() : Start_timer{ Time::now() }
+		{
+		}
+
+		Duration Elapsed() const 
+		{
+			return std::chrono::duration<double>(Start_timer - Time::now());
+		}
+
+		TimePoint GetTimeNow() 
+		{
+			return Time::now();
+		}
+
+
+		float fGetTimeNow() 
+		{
+			auto elapsed = std::chrono::duration<double>(Start_timer - Time::now());
+			return std::chrono::duration_cast<MilliSeconds>(elapsed);
+		}
+
+		void Reset() 
+		{
+			Start_timer = Time::now();
+		}
+
+		~Timer() {}
+	};
+
 }
+
 
 #endif
